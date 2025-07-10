@@ -2,7 +2,7 @@
 
 use path2enum::magic;
 
-#[magic(path = "path2enum/tests/assets", ext = "svg,toml")]
+#[magic(path = "tests/assets", ext = "svg,toml")]
 pub enum PublicPaths {}
 
 #[test]
@@ -20,7 +20,7 @@ fn magic_generation() {
     );
 }
 
-#[magic(ext = "toml")]
+#[magic(ext = "rs,svg,toml")]
 pub enum ProjectPaths {}
 
 #[test]
@@ -28,12 +28,12 @@ fn magic() {
     use crate::ProjectPaths;
 
     assert_eq!(
-        ProjectPaths::DebugノDebuggerノCargoToml.to_str(),
-        "debug/debugger/Cargo.toml"
+        ProjectPaths::SrcノLibRs.to_str(),
+        "src/lib.rs"
     );
     assert_eq!(
-        ProjectPaths::ClientノLeptosUiノCargoToml.to_str(),
-        "client/leptos_ui/Cargo.toml"
+        ProjectPaths::TestsノAssetsノArrowLeftSvg.to_str(),
+        "tests/assets/arrow-left.svg"
     );
     assert_eq!(ProjectPaths::CargoToml.to_str(), "Cargo.toml");
 }
