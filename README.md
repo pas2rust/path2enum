@@ -2,7 +2,7 @@
 
 [![Crates.io](https://img.shields.io/crates/v/path2enum.svg)](https://crates.io/crates/path2enum)
 [![Docs.rs](https://docs.rs/path2enum/badge.svg)](https://docs.rs/path2enum)
-[![License](https://img.shields.io/crates/l/path2enum.svg)](https://github.com/pas2rust/mdd/blob/dev/path2enum/License.md)
+[![License](https://img.shields.io/crates/l/path2enum.svg)](https://github.com/pas2rust/path2enum/blob/master/LICENSE)
 
 `path2enum` is a procedural macro for Rust that generates enums based on your project's real file paths. It enables type-safe, autocomplete-friendly access to static assets and configuration files, reducing errors and improving developer experience.
 
@@ -31,12 +31,12 @@ Import the magic macro and apply it to an empty enum to automatically generate v
 ```rust
   use path2enum::magic;
 
-    #[magic(path = "path2enum/tests/assets", ext = "svg,toml")]
-    pub enum PublicPaths {}
+  #[magic(path = "path2enum/tests/assets", ext = "svg,toml")]
+  pub enum PublicPaths {}
 
-    #[magic(ext = "toml")]
-    pub enum ProjectPaths {}
+  #[magic(ext = "toml")]
+  pub enum ProjectPaths {}
 
-    let path = PublicPaths::ArrowLeftSvg.to_str(); // "arrow-left.svg"
-    let nested_path = PublicPaths::NestedDirノIconSvg.to_str(); // "nested_dir/icon.svg"
+  let path = PublicPaths::ArrowLeftSvg.to_str(); // "arrow-left.svg"
+  let nested_path = PublicPaths::NestedDirノIconSvg.to_str(); // "nested_dir/icon.svg"
 ```
