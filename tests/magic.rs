@@ -26,11 +26,27 @@ pub enum ProjectPaths {}
 #[test]
 fn magic() {
     use crate::ProjectPaths;
-
     assert_eq!(ProjectPaths::SrcノLibRs.to_str(), "src/lib.rs");
     assert_eq!(
         ProjectPaths::TestsノAssetsノArrowLeftSvg.to_str(),
         "tests/assets/arrow-left.svg"
     );
     assert_eq!(ProjectPaths::CargoToml.to_str(), "Cargo.toml");
+}
+
+#[magic(path = "tests/assets", ext = "svg", prefix = "icons")]
+pub enum Icons {}
+
+#[test]
+fn icons() {
+    use crate::Icons;
+    assert_eq!(Icons::IconsノHomeSvg.to_str(), "icons/home.svg");
+    assert_eq!(
+        Icons::Iconsノ_11Testノ_11Svg.to_str(),
+        "icons/11-test/11.svg"
+    );
+    assert_eq!(
+        Icons::IconsノNestedDirノDeepDirノDeepIconSvg.to_str(),
+        "icons/nested_dir/deep_dir/deep-icon.svg"
+    );
 }
