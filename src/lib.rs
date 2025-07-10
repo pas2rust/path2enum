@@ -19,9 +19,8 @@ impl ToValidIdent for str {
         let mut segments = Vec::new();
 
         for part in parts {
-            // Replace '&' with "And"
             let replaced = part.replace('&', "And");
-
+            let replaced = replaced.replace('.', "・");
             // Convert to PascalCase
             let pascal = replaced
                 .split(&['-', '_', '.', ' '][..])
@@ -80,13 +79,15 @@ impl ToValidIdent for str {
 /// - Recursively scans the `path` directory.
 /// - For each file with an extension in `ext`, generates an enum variant.
 /// - Variant names are derived from the file path, transformed to valid Rust identifiers:
-///   - `/` is replaced by `ノ`
-///   - `-`, `_`, `.`, and spaces are used as separators and transformed into PascalCase words
-///   - Invalid characters are replaced (e.g. digit prefixes get a leading underscore)
+///   - `/` is replaced by `ノ` (katakana no)
+///   - `-`, `_`, `.` (dot), and spaces are treated as separators for PascalCase words
+///   - The `.` character is replaced by the Japanese middle dot `・` (U+30FB) in the identifier,
+///     so file extensions appear visually separated but valid in Rust identifiers.
+///   - Invalid characters replaced (e.g., digit prefixes get a leading underscore)
 ///   - `&` is replaced by `And`
 ///
 /// - The `.to_str()` method returns the original file path as-is,
-///   including hyphens, underscores, and prefix (if any).
+///   including hyphens, underscores, dots, and prefix (if any).
 ///
 /// # Examples
 ///
@@ -96,23 +97,23 @@ impl ToValidIdent for str {
 /// #[magic(path = "tests/assets", ext = "svg,toml")]
 /// pub enum PublicPaths {}
 ///
-/// assert_eq!(PublicPaths::ArrowLeftSvg.to_str(), "arrow-left.svg");
-/// assert_eq!(PublicPaths::NestedDirノIconSvg.to_str(), "nested_dir/icon.svg");
-/// assert_eq!(PublicPaths::NestedDirノDeepDirノDeepIconSvg.to_str(), "nested_dir/deep_dir/deep-icon.svg");
+/// assert_eq!(PublicPaths::ArrowLeft・svg.to_str(), "arrow-left.svg");
+/// assert_eq!(PublicPaths::NestedDirノIcon・svg.to_str(), "nested_dir/icon.svg");
+/// assert_eq!(PublicPaths::NestedDirノDeepDirノDeepIcon・svg.to_str(), "nested_dir/deep_dir/deep-icon.svg");
 ///
 /// #[magic(ext = "rs,svg,toml")]
 /// pub enum ProjectPaths {}
 ///
-/// assert_eq!(ProjectPaths::SrcノLibRs.to_str(), "src/lib.rs");
-/// assert_eq!(ProjectPaths::TestsノAssetsノArrowLeftSvg.to_str(), "tests/assets/arrow-left.svg");
-/// assert_eq!(ProjectPaths::CargoToml.to_str(), "Cargo.toml");
+/// assert_eq!(ProjectPaths::SrcノLib・rs.to_str(), "src/lib.rs");
+/// assert_eq!(ProjectPaths::TestsノAssetsノArrowLeft・svg.to_str(), "tests/assets/arrow-left.svg");
+/// assert_eq!(ProjectPaths::Cargo・toml.to_str(), "Cargo.toml");
 ///
 /// #[magic(path = "tests/assets", ext = "svg", prefix = "icons")]
 /// pub enum Icons {}
 ///
-/// assert_eq!(Icons::IconsノHomeSvg.to_str(), "icons/home.svg");
-/// assert_eq!(Icons::Iconsノ_11Testノ_11Svg.to_str(), "icons/11-test/11.svg");
-/// assert_eq!(Icons::IconsノNestedDirノDeepDirノDeepIconSvg.to_str(), "icons/nested_dir/deep_dir/deep-icon.svg");
+/// assert_eq!(Icons::IconsノHome・svg.to_str(), "icons/home.svg");
+/// assert_eq!(Icons::Iconsノ_11Testノ_11・svg.to_str(), "icons/11-test/11.svg");
+/// assert_eq!(Icons::IconsノNestedDirノDeepDirノDeepIcon・svg.to_str(), "icons/nested_dir/deep_dir/deep-icon.svg");
 /// ```
 ///
 /// # Notes
@@ -120,15 +121,16 @@ impl ToValidIdent for str {
 /// - The generated enum derives common traits (`Debug, Clone, Copy, PartialEq, Eq`).
 /// - The `.to_str()` method returns the original file path for runtime usage.
 /// - Generated variant identifiers follow Rust naming rules even for special characters or digit-starting names.
+/// - The Japanese middle dot `・` improves readability of extensions inside identifiers without breaking Rust syntax.
 ///
 /// # Typical use case
 ///
-/// Great for embedding static assets, config files, or resources you want to access via enum at compile time,
+/// Useful for embedding static assets, config files, or resources accessible via enums at compile time,
 /// avoiding hardcoded string literals.
 ///
 /// # Requirements
 ///
-/// This macro depends on the `path2enum` crate (your project) which should be added as a dependency.
+/// This macro depends on the `path2enum` crate which should be added as a dependency.
 ///
 ///
 /// ```ignore
@@ -137,11 +139,10 @@ impl ToValidIdent for str {
 /// pub enum Icons {}
 ///
 /// fn main() {
-///     println!("{}", Icons::IconsノHomeSvg.to_str());
+///     println!("{}", Icons::IconsノHome・svg.to_str());
 /// }
 /// ```
 ///
-
 pub fn magic(attr: TokenStream, item: TokenStream) -> TokenStream {
     let input_enum = parse_macro_input!(item as ItemEnum);
 

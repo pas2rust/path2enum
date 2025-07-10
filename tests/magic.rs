@@ -9,13 +9,13 @@ pub enum PublicPaths {}
 fn magic_generation() {
     use crate::PublicPaths;
 
-    assert_eq!(PublicPaths::ArrowLeftSvg.to_str(), "arrow-left.svg");
+    assert_eq!(PublicPaths::ArrowLeft・svg.to_str(), "arrow-left.svg");
     assert_eq!(
-        PublicPaths::NestedDirノIconSvg.to_str(),
+        PublicPaths::NestedDirノIcon・svg.to_str(),
         "nested_dir/icon.svg"
     );
     assert_eq!(
-        PublicPaths::NestedDirノDeepDirノDeepIconSvg.to_str(),
+        PublicPaths::NestedDirノDeepDirノDeepIcon・svg.to_str(),
         "nested_dir/deep_dir/deep-icon.svg"
     );
 }
@@ -26,12 +26,12 @@ pub enum ProjectPaths {}
 #[test]
 fn magic() {
     use crate::ProjectPaths;
-    assert_eq!(ProjectPaths::SrcノLibRs.to_str(), "src/lib.rs");
+    assert_eq!(ProjectPaths::SrcノLib・rs.to_str(), "src/lib.rs");
     assert_eq!(
-        ProjectPaths::TestsノAssetsノArrowLeftSvg.to_str(),
+        ProjectPaths::TestsノAssetsノArrowLeft・svg.to_str(),
         "tests/assets/arrow-left.svg"
     );
-    assert_eq!(ProjectPaths::CargoToml.to_str(), "Cargo.toml");
+    assert_eq!(ProjectPaths::Cargo・toml.to_str(), "Cargo.toml");
 }
 
 #[magic(path = "tests/assets", ext = "svg", prefix = "icons")]
@@ -40,13 +40,13 @@ pub enum Icons {}
 #[test]
 fn icons() {
     use crate::Icons;
-    assert_eq!(Icons::IconsノHomeSvg.to_str(), "icons/home.svg");
+    assert_eq!(Icons::IconsノHome・svg.to_str(), "icons/home.svg");
     assert_eq!(
-        Icons::Iconsノ_11Testノ_11Svg.to_str(),
+        Icons::Iconsノ_11Testノ_11・svg.to_str(),
         "icons/11-test/11.svg"
     );
     assert_eq!(
-        Icons::IconsノNestedDirノDeepDirノDeepIconSvg.to_str(),
+        Icons::IconsノNestedDirノDeepDirノDeepIcon・svg.to_str(),
         "icons/nested_dir/deep_dir/deep-icon.svg"
     );
 }
