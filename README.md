@@ -2,7 +2,7 @@
 
 [![Crates.io](https://img.shields.io/crates/v/path2enum.svg)](https://crates.io/crates/path2enum)
 [![Docs.rs](https://docs.rs/path2enum/badge.svg)](https://docs.rs/path2enum)
-[![License](https://img.shields.io/crates/l/path2enum.svg)](https://github.com/pas2rust/path2enum/blob/master/LICENSE)
+[![License](https://img.shields.io/crates/l/path2enum.svg)](https://github.com/pas2rust/path2enum/blob/master/LICENSE.md)
 
 `path2enum` is a procedural macro for Rust that generates enums based on your project's real file paths. It enables type-safe, autocomplete-friendly access to static assets and configuration files, reducing errors and improving developer experience.
 
