@@ -27,10 +27,7 @@ pub enum ProjectPaths {}
 fn magic() {
     use crate::ProjectPaths;
 
-    assert_eq!(
-        ProjectPaths::SrcノLibRs.to_str(),
-        "src/lib.rs"
-    );
+    assert_eq!(ProjectPaths::SrcノLibRs.to_str(), "src/lib.rs");
     assert_eq!(
         ProjectPaths::TestsノAssetsノArrowLeftSvg.to_str(),
         "tests/assets/arrow-left.svg"
