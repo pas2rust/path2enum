@@ -1,0 +1,27 @@
+[package]
+name = "path2enum"
+version = "0.1.2"
+edition = "2024"
+description = "A procedural macro that generates enums from real project file paths"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/pas2rust/mdd/path2enum"
+readme = "README.md"
+exclude = [
+    "tests/*",
+    "tests",
+    "main.rs"
+]
+
+keywords = ["macro", "proc-macro", "filesystem", "codegen", "productivity"]
+categories = ["development-tools"]
+authors = ["Your Name <you@example.com>"]
+homepage = "https://github.com/pas2rust/mdd/"
+documentation = "https://docs.rs/path2enum"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+syn = { version = "2", features = ["full"] }
+quote = "1"
+proc-macro2 = "1"
