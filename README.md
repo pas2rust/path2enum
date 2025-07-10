@@ -7,7 +7,7 @@
 
 ---
 
-## Features
+## 🔨 Features 
 
 - Generate Rust enums directly from directory structures, including nested folders.
 - Filter files by extension (e.g., `svg`, `toml`, `rs`).
@@ -18,16 +18,15 @@
 
 ---
 
-## Installation
+## ⚙️ Installation 
 
 Add `path2enum` to your `Cargo.toml` dependencies:
 
-```toml
-[dependencies]
-path2enum = "0.3.0"
+```bash
+cargo add path2enum
 ```
  
-## Usage
+## 🚀 Usage 
 
 Import the magic macro and apply it to an empty enum to automatically generate variants representing files in your project directories. You can optionally specify the directory path (path) and file extension filter (ext).
 
@@ -54,3 +53,8 @@ assert_eq!(Icons::IconsノHome・svg.to_str(), "icons/home.svg");
 assert_eq!(Icons::Iconsノ_11Testノ_11・svg.to_str(), "icons/11-test/11.svg");
 assert_eq!(Icons::IconsノNestedDirノDeepDirノDeepIcon・svg.to_str(), "icons/nested_dir/deep_dir/deep-icon.svg");
 ```
+
+# ❤️ Donate
+
+[![Monero](https://img.shields.io/badge/88NKLkhZf1nTVpaSU6vwG6dwBwb9tFVSM8Lpj3YqdL1PMt8Gm7opV7aUnMYBaAC9Y6a4kfDc3fLGoMVqeSJKNphyLpLdEvC-FF6600?style=flat&logo=monero&logoColor=white)](https://github.com/pas2rust/pas2rust/blob/main/pas-monero-donate.png)
+[![Bitcoin](https://img.shields.io/badge/bc1qnlayyh84e9u5pd4m9g9sf4c5zdzswvkmudmdu5-EAB300?style=flat&logo=bitcoin&logoColor=white)](https://github.com/pas2rust/pas2rust/blob/main/pas-bitcoin-donate.png)
