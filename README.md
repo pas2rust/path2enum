@@ -29,14 +29,43 @@ path2enum = "0.1.0"
 Import the magic macro and apply it to an empty enum to automatically generate variants representing files in your project directories. You can optionally specify the directory path (path) and file extension filter (ext).
 
 ```rust
+ #![allow(mixed_script_confusables)]
+
   use path2enum::magic;
 
-  #[magic(path = "path2enum/tests/assets", ext = "svg,toml")]
+  #[magic(path = "tests/assets", ext = "svg,toml")]
   pub enum PublicPaths {}
 
-  #[magic(ext = "toml")]
+  #[test]
+  fn magic_generation() {
+      use crate::PublicPaths;
+
+      assert_eq!(PublicPaths::ArrowLeftSvg.to_str(), "arrow-left.svg");
+      assert_eq!(
+          PublicPaths::NestedDirノIconSvg.to_str(),
+          "nested_dir/icon.svg"
+      );
+      assert_eq!(
+          PublicPaths::NestedDirノDeepDirノDeepIconSvg.to_str(),
+          "nested_dir/deep_dir/deep-icon.svg"
+      );
+  }
+
+  #[magic(ext = "rs,svg,toml")]
   pub enum ProjectPaths {}
 
-  let path = PublicPaths::ArrowLeftSvg.to_str(); // "arrow-left.svg"
-  let nested_path = PublicPaths::NestedDirノIconSvg.to_str(); // "nested_dir/icon.svg"
+  #[test]
+  fn magic() {
+      use crate::ProjectPaths;
+
+      assert_eq!(
+          ProjectPaths::SrcノLibRs.to_str(),
+          "src/lib.rs"
+      );
+      assert_eq!(
+          ProjectPaths::TestsノAssetsノArrowLeftSvg.to_str(),
+          "tests/assets/arrow-left.svg"
+      );
+      assert_eq!(ProjectPaths::CargoToml.to_str(), "Cargo.toml");
+  }
 ```
