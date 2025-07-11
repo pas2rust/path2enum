@@ -108,12 +108,11 @@ impl ToValidIdent for str {
 /// assert_eq!(ProjectPaths::TestsノAssetsノArrowLeft・svg.to_str(), "tests/assets/arrow-left.svg");
 /// assert_eq!(ProjectPaths::Cargo・toml.to_str(), "Cargo.toml");
 ///
-/// #[magic(path = "tests/assets", ext = "svg", prefix = "icons")]
+/// #[magic(path = "tests/assets", ext = "svg", prefix = "assets")]
 /// pub enum Icons {}
-///
-/// assert_eq!(Icons::IconsノHome・svg.to_str(), "icons/home.svg");
-/// assert_eq!(Icons::Iconsノ_11Testノ_11・svg.to_str(), "icons/11-test/11.svg");
-/// assert_eq!(Icons::IconsノNestedDirノDeepDirノDeepIcon・svg.to_str(), "icons/nested_dir/deep_dir/deep-icon.svg");
+/// assert_eq!(Icons::AssetsノHome・svg.to_str(), "assets/home.svg");
+/// assert_eq!(Icons::Assetsノ_11Testノ_11・svg.to_str(),"assets/11-test/11.svg");
+/// assert_eq!(Icons::AssetsノNestedDirノDeepDirノDeepIcon・svg.to_str(),"assets/nested_dir/deep_dir/deep-icon.svg");
 /// ```
 ///
 /// # Notes
@@ -209,8 +208,10 @@ pub fn magic(attr: TokenStream, item: TokenStream) -> TokenStream {
             pub fn to_str(&self) -> &'static str {
                 match self {
                     #(#match_arms)*
+                    _ => unreachable!("Unrecognized variant in generated enum {}", stringify!(#enum_ident)),
                 }
             }
+
 
             pub fn to_string(&self) -> String {
                 self.to_str().to_string()
@@ -226,7 +227,7 @@ fn collect_paths(
     allowed_exts: &[String],
     variants: &mut Vec<(proc_macro2::Ident, String)>,
     current_rel_path: &str,
-    prefix: &str,
+    logical_prefix: &str,
 ) {
     let Ok(entries) = fs::read_dir(dir) else {
         return;
@@ -237,7 +238,6 @@ fn collect_paths(
         let file_name = entry.file_name();
         let name = file_name.to_string_lossy();
 
-        // Build relative path
         let rel_path = if current_rel_path.is_empty() {
             name.to_string()
         } else {
@@ -245,12 +245,12 @@ fn collect_paths(
         };
 
         if path.is_dir() {
-            collect_paths(&path, allowed_exts, variants, &rel_path, prefix);
+            collect_paths(&path, allowed_exts, variants, &rel_path, logical_prefix);
         } else if path.is_file() && has_allowed_extension(&name, allowed_exts) {
-            let logical_path = if prefix.is_empty() {
+            let logical_path = if logical_prefix.is_empty() {
                 rel_path.clone()
             } else {
-                format!("{}/{}", prefix, rel_path)
+                format!("{}/{}", logical_prefix, rel_path)
             };
 
             let variant_ident = format_ident!("{}", logical_path.to_valid_rust_ident_with_no());
@@ -258,6 +258,7 @@ fn collect_paths(
         }
     }
 }
+
 
 fn has_allowed_extension(file_name: &str, allowed_exts: &[String]) -> bool {
     allowed_exts

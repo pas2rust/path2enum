@@ -34,19 +34,21 @@ fn magic() {
     assert_eq!(ProjectPaths::Cargo・toml.to_str(), "Cargo.toml");
 }
 
-#[magic(path = "tests/assets", ext = "svg", prefix = "icons")]
+#[magic(path = "tests/assets", ext = "svg", prefix = "assets")]
 pub enum Icons {}
+
 
 #[test]
 fn icons() {
     use crate::Icons;
-    assert_eq!(Icons::IconsノHome・svg.to_str(), "icons/home.svg");
+
+    assert_eq!(Icons::AssetsノHome・svg.to_str(), "assets/home.svg");
     assert_eq!(
-        Icons::Iconsノ_11Testノ_11・svg.to_str(),
-        "icons/11-test/11.svg"
+        Icons::Assetsノ_11Testノ_11・svg.to_str(),
+        "assets/11-test/11.svg"
     );
     assert_eq!(
-        Icons::IconsノNestedDirノDeepDirノDeepIcon・svg.to_str(),
-        "icons/nested_dir/deep_dir/deep-icon.svg"
+        Icons::AssetsノNestedDirノDeepDirノDeepIcon・svg.to_str(),
+        "assets/nested_dir/deep_dir/deep-icon.svg"
     );
 }
