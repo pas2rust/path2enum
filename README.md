@@ -4,7 +4,7 @@
 [![License](https://img.shields.io/crates/l/path2enum.svg)](https://github.com/pas2rust/path2enum/blob/main/LICENSE)
 ![GitHub top language](https://img.shields.io/github/languages/top/pas2rust/path2enum?color=orange&logo=rust&style=flat&logoColor=white)
 ![GitHub stars](https://img.shields.io/github/stars/pas2rust/path2enum?color=success&style=flat&logo=github)
-![GitHub forks](https://img.shields.io/github/forks/pas2rust/path2enum?color=orange&logo=Furry%20Network%20Network&style=flat&logoColor=white)
+![GitHub forks](https://img.shields.io/github/forks/pas2rust/path2enum?color=orange&logo=Furry%20Network&style=flat&logoColor=white)
 ![Tests](https://raw.githubusercontent.com/pas2rust/badges/main/path2enum-tests.svg)
 ![Crates.io downloads](https://img.shields.io/crates/d/path2enum.svg)
 ![GitHub last commit](https://img.shields.io/github/last-commit/pas2rust/path2enum?color=ff69b4&label=update&logo=git&style=flat&logoColor=white)
