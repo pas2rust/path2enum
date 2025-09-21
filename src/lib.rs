@@ -212,6 +212,7 @@ pub fn magic(attr: TokenStream, item: TokenStream) -> TokenStream {
                 }
             }
 
+            
 
             pub fn to_string(&self) -> String {
                 self.to_str().to_string()

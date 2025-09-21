@@ -1,0 +1,27 @@
+name: CI/CD with Cargo Publish
+
+on:
+  push:
+    branches:
+      - main 
+      - master
+
+jobs:
+  build_and_publish:
+    name: Build, Test and Publish
+    runs-on: ubuntu-latest
+    environment: crates-io
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Run Tests
+        run: cargo test
+
+      - name: Publish to Crates.io
+        if: success()
+        run: cargo publish --token ${{ secrets.CRATES_IO_TOKEN }}
