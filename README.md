@@ -1,7 +1,12 @@
 # path2enum
 [![Crates.io](https://img.shields.io/crates/v/path2enum.svg)](https://crates.io/crates/path2enum)
 [![Docs.rs](https://docs.rs/path2enum/badge.svg)](https://docs.rs/path2enum)
-[![License](https://img.shields.io/crates/l/path2enum.svg)](https://github.com/pas2rust/path2enum/blob/master/LICENSE.md)
+[![License](https://img.shields.io/crates/l/path2enum.svg)](https://github.com/pas2rust/path2enum/blob/main/LICENSE)
+![GitHub top language](https://img.shields.io/github/languages/top/pas2rust/path2enum?color=orange&logo=rust&style=flat&logoColor=white)
+![GitHub stars](https://img.shields.io/github/stars/pas2rust/path2enum?color=success&style=flat&logo=github)
+![GitHub forks](https://img.shields.io/github/forks/pas2rust/path2enum?color=orange&logo=Furry%20Network&style=flat&logoColor=white)
+![path2enum-tests](https://github.com/pas2rust/badges/blob/main/path2enum-tests.svg)
+![GitHub last commit](https://img.shields.io/github/last-commit/pas2rust/path2enum?color=ff69b4&label=update&logo=git&style=flat&logoColor=white)
 
 `path2enum` is a Rust procedural macro that automatically generates enums from your project’s real file paths. It provides **type-safe**, **autocomplete-friendly** access to static assets, config files, or any resources in your filesystem, reducing errors and boosting developer productivity.
 
