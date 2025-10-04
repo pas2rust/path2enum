@@ -2,6 +2,7 @@ use proc_macro::TokenStream;
 use proc_macro2::{Span, TokenStream as TokenStream2};
 use quote::{format_ident, quote};
 use std::{
+    collections::HashSet,
     fs,
     path::{Path, PathBuf},
 };
@@ -14,92 +15,161 @@ trait ToValidIdent {
 
 impl ToValidIdent for str {
     fn to_valid_rust_ident_with_no(&self) -> String {
+        // Split by logical path segments
         let parts: Vec<&str> = self.split('/').collect();
-
-        let mut segments = Vec::new();
+        let mut segments: Vec<String> = Vec::with_capacity(parts.len());
 
         for part in parts {
-            let replaced = part.replace('&', "And");
-            let replaced = replaced.replace('.', "・");
-            // Convert to PascalCase
-            let pascal = replaced
-                .split(&['-', '_', '.', ' '][..])
+            // keep intended replacements: '&' -> And, '.' -> ・ (middle dot)
+            let replaced = part.replace('&', "And").replace('.', "・");
+
+            // split into words on common separators (note '.' already replaced above)
+            let words = replaced
+                .split(&['-', '_', ' '][..])
                 .filter(|s| !s.is_empty())
-                .map(|word| {
-                    let mut chars = word.chars();
-                    if let Some(first_char) = chars.next() {
-                        let mut s = String::new();
+                .collect::<Vec<_>>();
 
-                        // Prefix digits with '_'
-                        if first_char.is_ascii_digit() {
-                            s.push('_');
-                            s.push(first_char);
-                        } else {
-                            s.push(first_char.to_ascii_uppercase());
-                        }
+            // PascalCase each part (works with Unicode letters)
+            let mut pascal = String::new();
+            for word in words {
+                let mut chars = word.chars();
+                if let Some(first) = chars.next() {
+                    // use to_uppercase() for Unicode correctness
+                    let first_up = first.to_uppercase().to_string();
+                    pascal.push_str(&first_up);
+                    pascal.push_str(chars.as_str());
+                }
+            }
 
-                        s.push_str(chars.as_str());
-                        s
-                    } else {
-                        String::new()
-                    }
-                })
-                .collect::<String>();
+            // If the Pascal result is empty (rare), or starts with invalid start char,
+            // ensure the segment starts with a valid identifier-start (letter or underscore).
+            let safe = match pascal.chars().next() {
+                Some(c) if c == '_' => pascal,
+                Some(c) if c.is_alphabetic() => pascal, // allows Unicode letters (Katakana included)
+                Some(c) if c.is_ascii_digit() => format!("_{}", pascal),
+                Some(_) => format!("_{}", pascal),
+                None => "_".to_string(),
+            };
 
-            segments.push(pascal);
+            segments.push(safe);
         }
 
-        // Join segments using 'ノ' instead of '/'
-        segments.join("ノ")
+        // Join segments with ノ to match your display style
+        let joined = segments.join("ノ");
+
+        // Final guard: make sure the overall first char is valid (if not, prefix `_`)
+        let ident = match joined.chars().next() {
+            Some(c) if c == '_' => joined,
+            Some(c) if c.is_alphabetic() => joined,
+            Some(c) if c.is_ascii_digit() => format!("_{}", joined),
+            Some(_) => format!("_{}", joined),
+            None => "_".to_string(),
+        };
+
+        ident
     }
 }
 
+fn collect_paths(
+    dir: &Path,
+    allowed_exts: &[String],
+    variants: &mut Vec<(proc_macro2::Ident, String)>,
+    current_rel_path: &str,
+    logical_prefix: &str,
+    seen: &mut HashSet<String>,
+) {
+    let Ok(entries) = fs::read_dir(dir) else {
+        return;
+    };
+
+    for entry in entries.filter_map(Result::ok) {
+        let path = entry.path();
+        let file_name = entry.file_name();
+        let name = file_name.to_string_lossy();
+
+        let rel_path = if current_rel_path.is_empty() {
+            name.to_string()
+        } else {
+            format!("{}/{}", current_rel_path, name)
+        };
+
+        if path.is_dir() {
+            // logical path for the directory itself
+            let logical_dir_path = if logical_prefix.is_empty() {
+                rel_path.clone()
+            } else {
+                format!("{}/{}", logical_prefix, rel_path)
+            };
+
+            if !seen.contains(&logical_dir_path) {
+                let ident_str = logical_dir_path.to_valid_rust_ident_with_no();
+                let dir_ident = format_ident!("{}", ident_str);
+                variants.push((dir_ident, logical_dir_path.clone()));
+                seen.insert(logical_dir_path.clone());
+            }
+
+            // recurse into directory
+            collect_paths(&path, allowed_exts, variants, &rel_path, logical_prefix, seen);
+        } else if path.is_file() && has_allowed_extension(&name, allowed_exts) {
+            let logical_path = if logical_prefix.is_empty() {
+                rel_path.clone()
+            } else {
+                format!("{}/{}", logical_prefix, rel_path)
+            };
+
+            if !seen.contains(&logical_path) {
+                let ident_str = logical_path.to_valid_rust_ident_with_no();
+                let variant_ident = format_ident!("{}", ident_str);
+                variants.push((variant_ident, logical_path.clone()));
+                seen.insert(logical_path);
+            }
+        }
+    }
+}
+
+fn has_allowed_extension(file_name: &str, allowed_exts: &[String]) -> bool {
+    allowed_exts
+        .iter()
+        .any(|ext| file_name.ends_with(&format!(".{}", ext)))
+}
+
+
 #[proc_macro_attribute]
-/// Procedural macro `magic` to generate Rust enums from filesystem files.
+/// Procedural macro `magic` — generates enums from real filesystem paths.
 ///
-/// Generates enum variants whose names are derived from real file paths,
-/// transformed into valid Rust identifiers, while preserving the original path for access.
+/// ## Parameters
+/// - `path: &str` — root directory to scan (default: `"."`).
+/// - `ext: &str` — comma-separated list of allowed extensions (e.g. `"rs,svg,toml"`; default: `"svg"`).
+/// - `prefix: &str` — optional logical prefix added to the paths returned by `to_str()`.
 ///
-/// # Macro attributes (parameters):
+/// ## Behavior
+/// - Recursively scans the given `path`.
+/// - Generates an enum variant **for each directory** and **for each file** matching the allowed extensions.
+///   Example: both `a/b/c` (directory) and `a/b/c/file.svg` (file) will appear as distinct variants.
+/// - Variants are made readable:
+///   - each segment is converted to PascalCase;
+///   - path separators are represented by `ノ` (katakana no);
+///   - the separator between filename and extension is `・` (middle dot).
+/// - If a segment starts with invalid characters for a Rust identifier (e.g. dot, digit), it is prefixed with `_`.
+/// - `Enum::to_str()` always returns the original logical path (with hyphens, underscores, extension, and prefix intact).
 ///
-/// - `path: &str`  
-///   Root directory where the macro will scan files.  
-///   Default: `"."` (project root).
-///
-/// - `ext: &str`  
-///   Allowed file extensions, comma-separated (e.g. `"rs,svg,toml"`).  
-///   Default: `"svg"`.
-///
-/// - `prefix: &str`  
-///   Optional prefix added to the returned path from `.to_str()`.  
-///   Useful for virtual namespaces or folders.
-///
-/// # Behavior
-///
-/// - Recursively scans the `path` directory.
-/// - For each file with an extension in `ext`, generates an enum variant.
-/// - Variant names are derived from the file path, transformed to valid Rust identifiers:
-///   - `/` is replaced by `ノ` (katakana no)
-///   - `-`, `_`, `.` (dot), and spaces are treated as separators for PascalCase words
-///   - The `.` character is replaced by the Japanese middle dot `・` (U+30FB) in the identifier,
-///     so file extensions appear visually separated but valid in Rust identifiers.
-///   - Invalid characters replaced (e.g., digit prefixes get a leading underscore)
-///   - `&` is replaced by `And`
-///
-/// - The `.to_str()` method returns the original file path as-is,
-///   including hyphens, underscores, dots, and prefix (if any).
-///
-/// # Examples
+/// ## Examples (doc-tests)
 ///
 /// ```rust
-/// use path2enum::magic;
+/// # #![allow(mixed_script_confusables)]
+/// # use path2enum::magic;
 ///
 /// #[magic(path = "tests/assets", ext = "svg,toml")]
 /// pub enum PublicPaths {}
 ///
+/// // file variants
 /// assert_eq!(PublicPaths::ArrowLeft・svg.to_str(), "arrow-left.svg");
 /// assert_eq!(PublicPaths::NestedDirノIcon・svg.to_str(), "nested_dir/icon.svg");
 /// assert_eq!(PublicPaths::NestedDirノDeepDirノDeepIcon・svg.to_str(), "nested_dir/deep_dir/deep-icon.svg");
+///
+/// // directory variants
+/// assert_eq!(PublicPaths::NestedDir.to_str(), "nested_dir");
+/// assert_eq!(PublicPaths::NestedDirノDeepDir.to_str(), "nested_dir/deep_dir");
 ///
 /// #[magic(ext = "rs,svg,toml")]
 /// pub enum ProjectPaths {}
@@ -108,40 +178,25 @@ impl ToValidIdent for str {
 /// assert_eq!(ProjectPaths::TestsノAssetsノArrowLeft・svg.to_str(), "tests/assets/arrow-left.svg");
 /// assert_eq!(ProjectPaths::Cargo・toml.to_str(), "Cargo.toml");
 ///
+/// // directory variant inside project
+/// assert_eq!(ProjectPaths::TestsノAssets.to_str(), "tests/assets");
+///
 /// #[magic(path = "tests/assets", ext = "svg", prefix = "assets")]
 /// pub enum Icons {}
+///
 /// assert_eq!(Icons::AssetsノHome・svg.to_str(), "assets/home.svg");
-/// assert_eq!(Icons::Assetsノ_11Testノ_11・svg.to_str(),"assets/11-test/11.svg");
-/// assert_eq!(Icons::AssetsノNestedDirノDeepDirノDeepIcon・svg.to_str(),"assets/nested_dir/deep_dir/deep-icon.svg");
+/// assert_eq!(Icons::Assetsノ_11Testノ_11・svg.to_str(), "assets/11-test/11.svg");
+/// assert_eq!(Icons::AssetsノNestedDirノDeepDirノDeepIcon・svg.to_str(), "assets/nested_dir/deep_dir/deep-icon.svg");
+///
+/// // directory variants with prefix
+/// assert_eq!(Icons::Assetsノ_11Test.to_str(), "assets/11-test");
+/// assert_eq!(Icons::AssetsノNestedDirノDeepDir.to_str(), "assets/nested_dir/deep_dir");
 /// ```
 ///
-/// # Notes
-///
-/// - The generated enum derives common traits (`Debug, Clone, Copy, PartialEq, Eq`).
-/// - The `.to_str()` method returns the original file path for runtime usage.
-/// - Generated variant identifiers follow Rust naming rules even for special characters or digit-starting names.
-/// - The Japanese middle dot `・` improves readability of extensions inside identifiers without breaking Rust syntax.
-///
-/// # Typical use case
-///
-/// Useful for embedding static assets, config files, or resources accessible via enums at compile time,
-/// avoiding hardcoded string literals.
-///
-/// # Requirements
-///
-/// This macro depends on the `path2enum` crate which should be added as a dependency.
-///
-///
-/// ```ignore
-/// // Simplified usage example
-/// #[magic(path = "assets/icons", ext = "svg", prefix = "icons")]
-/// pub enum Icons {}
-///
-/// fn main() {
-///     println!("{}", Icons::IconsノHome・svg.to_str());
-/// }
-/// ```
-///
+/// ## Notes
+/// - Variants use `ノ` and `・` for readability in code and tests.
+/// - An ASCII-only mode (e.g. `ArrowLeft_svg`) could be added as an option if needed.
+/// - Use `to_str()` at runtime to retrieve the original logical path.
 pub fn magic(attr: TokenStream, item: TokenStream) -> TokenStream {
     let input_enum = parse_macro_input!(item as ItemEnum);
 
@@ -184,9 +239,11 @@ pub fn magic(attr: TokenStream, item: TokenStream) -> TokenStream {
     let enum_ident = &input_enum.ident;
 
     let mut variants = Vec::new();
-    collect_paths(&root_path, &ext, &mut variants, "", &prefix);
+    let mut seen: HashSet<String> = HashSet::new();
+    collect_paths(&root_path, &ext, &mut variants, "", &prefix, &mut seen);
 
-    variants.sort_by(|a, b| a.0.cmp(&b.0));
+    // Sort by readable ident (string form of Ident) for deterministic output
+    variants.sort_by(|a, b| a.0.to_string().cmp(&b.0.to_string()));
 
     let variant_defs = variants.iter().map(|(ident, _)| quote! { #ident, });
 
@@ -212,8 +269,6 @@ pub fn magic(attr: TokenStream, item: TokenStream) -> TokenStream {
                 }
             }
 
-            
-
             pub fn to_string(&self) -> String {
                 self.to_str().to_string()
             }
@@ -221,48 +276,4 @@ pub fn magic(attr: TokenStream, item: TokenStream) -> TokenStream {
     };
 
     TokenStream::from(expanded)
-}
-
-fn collect_paths(
-    dir: &Path,
-    allowed_exts: &[String],
-    variants: &mut Vec<(proc_macro2::Ident, String)>,
-    current_rel_path: &str,
-    logical_prefix: &str,
-) {
-    let Ok(entries) = fs::read_dir(dir) else {
-        return;
-    };
-
-    for entry in entries.filter_map(Result::ok) {
-        let path = entry.path();
-        let file_name = entry.file_name();
-        let name = file_name.to_string_lossy();
-
-        let rel_path = if current_rel_path.is_empty() {
-            name.to_string()
-        } else {
-            format!("{}/{}", current_rel_path, name)
-        };
-
-        if path.is_dir() {
-            collect_paths(&path, allowed_exts, variants, &rel_path, logical_prefix);
-        } else if path.is_file() && has_allowed_extension(&name, allowed_exts) {
-            let logical_path = if logical_prefix.is_empty() {
-                rel_path.clone()
-            } else {
-                format!("{}/{}", logical_prefix, rel_path)
-            };
-
-            let variant_ident = format_ident!("{}", logical_path.to_valid_rust_ident_with_no());
-            variants.push((variant_ident, logical_path));
-        }
-    }
-}
-
-
-fn has_allowed_extension(file_name: &str, allowed_exts: &[String]) -> bool {
-    allowed_exts
-        .iter()
-        .any(|ext| file_name.ends_with(&format!(".{}", ext)))
 }

@@ -1,4 +1,4 @@
-name: Count Tests and Generate Badge
+name: Update Tests Badge
 
 on:
   push:
@@ -6,75 +6,41 @@ on:
       - main
       - master
 
+permissions:
+  contents: write
+
 jobs:
-  update_test_count:
+  create_badge:
     runs-on: ubuntu-latest
     environment: badges
     steps:
-      - name: Checkout Path2enum Repository
-        uses: actions/checkout@v4
-        with:
-          path: path2enum
+      - name: Checkout Repository
+        uses: actions/checkout@v5
 
-      - name: Count Test Functions
-        id: test_count_step
-        run: |
-         cd path2enum
-         TEST_COUNT=$(grep -r '#\[test\]' . | wc -l | xargs)
-         echo "TEST_COUNT=$TEST_COUNT" >> $GITHUB_OUTPUT
-      
+      - name: Setup Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      - name: Install pasops CLI
+        run: cargo install pasops --force
+
       - name: Checkout Badges Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: pas2rust/badges
           path: badges
           token: ${{ secrets.BADGE_TOKEN }}
 
-      - name: Generate Dynamic Badge SVG (no icon)
+      - name: Generate Badge
         run: |
-          TEST_COUNT=${{ steps.test_count_step.outputs.TEST_COUNT }}
-          DIGITS=${#TEST_COUNT}
+          pasops tests-badges \
+            --user pas2rust \
+            --badge-name path2enum-tests.svg \
+            --label tests \
+            --color success \
+            --logo testcafe \
+            --logo-color white \
+            --destiny badges 
 
-          LABEL_WIDTH=47
-          NUMBER_WIDTH=$(( DIGITS * 7 + 10 ))
-          NUMBER_TEXT_X=$(( LABEL_WIDTH + NUMBER_WIDTH / 2 ))
-          TOTAL_WIDTH=$(( LABEL_WIDTH + NUMBER_WIDTH ))
-          GREEN_RECT_X=$LABEL_WIDTH
-          LABEL_MID=$(( LABEL_WIDTH / 2 ))
-
-          cat > badges/path2enum-tests.svg <<EOF
-          <svg xmlns="http://www.w3.org/2000/svg" width="$TOTAL_WIDTH" height="20" viewBox="0 0 $TOTAL_WIDTH 20" role="img" aria-label="Tests: $TEST_COUNT">
-            <defs>
-              <linearGradient id="s" x2="0" y2="100%">
-                <stop offset="0" stop-color="#bbb" stop-opacity=".1"/>
-                <stop offset="1" stop-opacity=".1"/>
-              </linearGradient>
-              <clipPath id="r"><rect width="$TOTAL_WIDTH" height="20" rx="3" fill="#fff"/></clipPath>
-            </defs>
-
-            <g clip-path="url(#r)">
-              <rect width="$LABEL_WIDTH" height="20" fill="#555"/>
-              <rect x="$GREEN_RECT_X" width="$NUMBER_WIDTH" height="20" fill="#4c1"/>
-              <rect width="$TOTAL_WIDTH" height="20" fill="url(#s)"/>
-            </g>
-
-            <g fill="#fff" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="11" text-rendering="geometricPrecision">
-              <text x="$LABEL_MID" y="14" text-anchor="middle">tests</text>
-              <text x="$NUMBER_TEXT_X" y="14" text-anchor="middle">$TEST_COUNT</text>
-            </g>
-          </svg>
-          EOF
-
-
-      - name: Auto-Commit Badge
-        uses: stefanzweifel/git-auto-commit-action@v4
-        with:
-          commit_message: "chore: Update path2enum test count badge"
-          file_pattern: 'path2enum-tests.svg'
-          repository: badges
-          skip_dirty_check: true
-          commit_user_name: github-actions[bot]
-          commit_user_email: 41898282+github-actions[bot]@users.noreply.github.com
-          commit_author: pas2rust <pas2rust@users.noreply.github.com>
-          commit_options: '--allow-empty'   # <-- create empty commit if nothing changed       
-          token: ${{ secrets.BADGE_TOKEN }} # required to push to pas2rust/badges
