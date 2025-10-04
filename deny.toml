@@ -1,0 +1,31 @@
+[licenses]
+unused-allowed-license = "warn"
+confidence-threshold = 0.95
+allow = [
+  "Apache-2.0",
+  "MIT",
+  "BSD-3-Clause",
+  "ISC",
+  "Unicode-3.0",
+]
+
+[licenses.private]
+ignore = true
+registries = ["sekrets"]
+
+[sources]
+unknown-registry = "allow"
+unknown-git = "deny"
+required-git-spec = "tag"
+allow-registry = []
+allow-git = []
+unused-allowed-source = "warn"
+[sources.allow-org]
+github = []
+gitlab = []
+bitbucket = []
+
+[advisories]
+db-path = "~/.cargo/advisory-dbs"
+db-urls = ["https://github.com/RustSec/advisory-db"]
+unmaintained = "workspace"

@@ -58,7 +58,6 @@ fn magic() {
 #[magic(path = "tests/assets", ext = "svg", prefix = "assets")]
 pub enum Icons {}
 
-
 #[test]
 fn icons() {
     use crate::Icons;
@@ -74,13 +73,15 @@ fn icons() {
     );
 }
 
-
 #[test]
 fn icons_directories_and_files() {
     use crate::Icons;
 
     assert_eq!(Icons::AssetsノHome・svg.to_str(), "assets/home.svg");
-    assert_eq!(Icons::Assetsノ_11Testノ_11・svg.to_str(), "assets/11-test/11.svg");
+    assert_eq!(
+        Icons::Assetsノ_11Testノ_11・svg.to_str(),
+        "assets/11-test/11.svg"
+    );
     assert_eq!(
         Icons::AssetsノNestedDirノDeepDirノDeepIcon・svg.to_str(),
         "assets/nested_dir/deep_dir/deep-icon.svg"

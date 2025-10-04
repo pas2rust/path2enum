@@ -44,10 +44,10 @@ impl ToValidIdent for str {
             // If the Pascal result is empty (rare), or starts with invalid start char,
             // ensure the segment starts with a valid identifier-start (letter or underscore).
             let safe = match pascal.chars().next() {
-                Some(c) if c == '_' => pascal,
+                Some('_') => pascal,
                 Some(c) if c.is_alphabetic() => pascal, // allows Unicode letters (Katakana included)
-                Some(c) if c.is_ascii_digit() => format!("_{}", pascal),
-                Some(_) => format!("_{}", pascal),
+                Some(c) if c.is_ascii_digit() => format!("_{pascal}"),
+                Some(_) => format!("_{pascal}"),
                 None => "_".to_string(),
             };
 
@@ -58,15 +58,14 @@ impl ToValidIdent for str {
         let joined = segments.join("ノ");
 
         // Final guard: make sure the overall first char is valid (if not, prefix `_`)
-        let ident = match joined.chars().next() {
-            Some(c) if c == '_' => joined,
-            Some(c) if c.is_alphabetic() => joined,
-            Some(c) if c.is_ascii_digit() => format!("_{}", joined),
-            Some(_) => format!("_{}", joined),
-            None => "_".to_string(),
-        };
 
-        ident
+        match joined.chars().next() {
+            Some('_') => joined,
+            Some(c) if c.is_alphabetic() => joined,
+            Some(c) if c.is_ascii_digit() => format!("_{joined}"),
+            Some(_) => format!("_{joined}"),
+            None => "_".to_string(),
+        }
     }
 }
 
@@ -90,7 +89,7 @@ fn collect_paths(
         let rel_path = if current_rel_path.is_empty() {
             name.to_string()
         } else {
-            format!("{}/{}", current_rel_path, name)
+            format!("{current_rel_path}/{name}")
         };
 
         if path.is_dir() {
@@ -98,7 +97,7 @@ fn collect_paths(
             let logical_dir_path = if logical_prefix.is_empty() {
                 rel_path.clone()
             } else {
-                format!("{}/{}", logical_prefix, rel_path)
+                format!("{logical_prefix}/{rel_path}")
             };
 
             if !seen.contains(&logical_dir_path) {
@@ -109,12 +108,19 @@ fn collect_paths(
             }
 
             // recurse into directory
-            collect_paths(&path, allowed_exts, variants, &rel_path, logical_prefix, seen);
+            collect_paths(
+                &path,
+                allowed_exts,
+                variants,
+                &rel_path,
+                logical_prefix,
+                seen,
+            );
         } else if path.is_file() && has_allowed_extension(&name, allowed_exts) {
             let logical_path = if logical_prefix.is_empty() {
                 rel_path.clone()
             } else {
-                format!("{}/{}", logical_prefix, rel_path)
+                format!("{logical_prefix}/{rel_path}")
             };
 
             if !seen.contains(&logical_path) {
@@ -130,9 +136,8 @@ fn collect_paths(
 fn has_allowed_extension(file_name: &str, allowed_exts: &[String]) -> bool {
     allowed_exts
         .iter()
-        .any(|ext| file_name.ends_with(&format!(".{}", ext)))
+        .any(|ext| file_name.ends_with(&format!(".{ext}")))
 }
-
 
 #[proc_macro_attribute]
 /// Procedural macro `magic` — generates enums from real filesystem paths.
